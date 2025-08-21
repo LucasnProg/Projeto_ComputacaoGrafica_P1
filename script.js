@@ -1,6 +1,6 @@
 // Seleção de elementos da interface (DOM)
 const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const pixel = canvas.getContext("2d");
 const liveCoords = document.getElementById("live-coords");
 const clickedCoords = document.getElementById("clicked-coords");
 let selectedPixel = null;
@@ -19,30 +19,11 @@ document.getElementById("ymax").textContent = Ymax;
 
 // Função para desenhar um pixel no canvas
 function setPixel(x, y) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "white";
-    ctx.fillRect(x, y, 1, 1); 
+    pixel.clearRect(0, 0, canvas.width, canvas.height);
+    pixel.fillStyle = "white";
+    pixel.fillRect(x, y, 1, 1); 
 }
 
-// Evento para mostrar as coordenadas em tempo real ao mover o mouse
-canvas.addEventListener("mousemove", (event) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.round(event.clientX - rect.left); 
-    const y = Math.round(event.clientY - rect.top);
-
-    // Calcula as conversões entre os sistemas de coordenadas
-    const { ndcx, ndcy } = inpToNdc(x, y, canvas.width, canvas.height);
-    const world = ndcToWd(ndcx, ndcy, Xmax, Xmin, Ymax, Ymin);
-    const ndcCentral = wdToNdcCentral(world.worldX, world.worldY, Xmax, Xmin, Ymax, Ymin);
-    const device = ndcCentralToDc(ndcCentral.ndccx, ndcCentral.ndccy, canvas.width, canvas.height);
-
-    // Atualiza o painel de coordenadas ao vivo
-    liveCoords.innerHTML = `
-        <strong>Coordenadas de Mundo:</strong><br> (${world.worldX.toFixed(3)}, ${world.worldY.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC:</strong><br> (${ndcx.toFixed(3)}, ${ndcy.toFixed(3)})<br><br>
-        <strong>Coordenadas de Dispositivo:</strong><br> (${x}, ${y})
-    `;
-});
 
 // Evento para mostrar e desenhar o pixel clicado
 canvas.addEventListener("click", (event) => {
@@ -106,7 +87,7 @@ document.getElementById("set-world-btn").addEventListener("click", () => {
 // Converte coordenadas de pixel para NDC (Normalized Device Coordinates)
 function inpToNdc(x, y, width, height) {
     return { 
-        ndcx: x / (width - 1),
+        ndcx: (x / (width - 1)),
         ndcy: 1 - (y / (height - 1)) 
     };
 }
