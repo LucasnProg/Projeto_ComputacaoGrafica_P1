@@ -12,10 +12,11 @@
   <div class="main">
     <div id="bounds-info">
       <p>
-        <strong>Xmax:</strong> <span id="xmax"></span> |
+        <strong>Limites do Mundo:</strong>
         <strong>Xmin:</strong> <span id="xmin"></span> |
-        <strong>Ymax:</strong> <span id="ymax"></span> |
-        <strong>Ymin:</strong> <span id="ymin"></span>
+        <strong>Xmax:</strong> <span id="xmax"></span> |
+        <strong>Ymin:</strong> <span id="ymin"></span> |
+        <strong>Ymax:</strong> <span id="ymax"></span>
       </p>
     </div>
 
@@ -23,22 +24,22 @@
   </div>
 
   <div class="sidebar">
-    <h3>Coordenadas</h3>  
+    <h3>Painel de Coordenadas</h3>
     <hr>
-    <p id="clicked-coords">Nenhum pixel selecionado</p>
+    <p id="clicked-coords">Clique no canvas para selecionar um pixel.</p>
+    <hr>
+    <div>
+      <label for="input-x">Coordenada X do Mundo:</label>
+      <input type="number" id="input-x" placeholder="Digite o valor de X">
 
-    <div id="input-div">
-      <label for="input-x">X:</label>
-      <input type="number" id="input-x">
+      <label for="input-y">Coordenada Y do Mundo:</label>
+      <input type="number" id="input-y" placeholder="Digite o valor de Y">
 
-      <label for="input-y">Y:</label>
-      <input type="number" id="input-y">
-
-      <button id="set-world-btn">Ativar Pixel</button>
+      <button id="set-world-btn">Desenhar Ponto do Mundo</button>
 
       <label for="ndc-mode">Intervalo NDC:</label>
-      <select id="ndc-mode">
-        <option value="-1-1">[-1,+1]</option>
+      <select id="ndc-mode" disabled>
+        <option value="-1-1">[-1, +1]</option>
       </select>
     </div>
   </div>
