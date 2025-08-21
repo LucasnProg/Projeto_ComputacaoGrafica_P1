@@ -40,7 +40,6 @@ canvas.addEventListener("mousemove", (event) => {
     liveCoords.innerHTML = `
         <strong>Coordenadas de Mundo:</strong><br> (${world.worldX.toFixed(3)}, ${world.worldY.toFixed(3)})<br><br>
         <strong>Coordenadas NDC:</strong><br> (${ndcx.toFixed(3)}, ${ndcy.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC Centralizada:</strong><br> (${ndcCentral.ndccx.toFixed(3)}, ${ndcCentral.ndccy.toFixed(3)})<br><br>
         <strong>Coordenadas de Dispositivo:</strong><br> (${x}, ${y})
     `;
 });
@@ -61,7 +60,6 @@ canvas.addEventListener("click", (event) => {
     // Atualiza o painel de coordenadas do clique
     clickedCoords.innerHTML = 
     `   <strong>Coordenadas de Mundo:</strong><br> (${world.worldX.toFixed(3)}, ${world.worldY.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC:</strong><br> (${ndcx.toFixed(3)}, ${ndcy.toFixed(3)})<br><br>
         <strong>Coordenadas NDC Centralizada:</strong><br> (${ndcCentral.ndccx.toFixed(3)}, ${ndcCentral.ndccy.toFixed(3)})<br><br>
         <strong>Coordenadas de Dispositivo:</strong><br> (${x}, ${y})
     `;
