@@ -1,11 +1,9 @@
 // Seleção de elementos da interface (DOM)
 const canvas = document.getElementById("canvas");
 const pixel = canvas.getContext("2d");
-const liveCoords = document.getElementById("live-coords");
 const clickedCoords = document.getElementById("clicked-coords");
-let selectedPixel = null;
 
-// Inicialização dos limites do sistema de coordenadas do mundo
+// Limites do sistema de coordenadas do mundo (User)
 let Xmax = 50;
 let Xmin = 0;
 let Ymax = 50;
@@ -19,100 +17,118 @@ document.getElementById("ymax").textContent = Ymax;
 
 // Função para desenhar um pixel no canvas
 function setPixel(x, y) {
-    pixel.clearRect(0, 0, canvas.width, canvas.height);
-    pixel.fillStyle = "white";
-    pixel.fillRect(x, y, 1, 1); 
+  pixel.clearRect(0, 0, canvas.width, canvas.height);
+  pixel.fillStyle = "white";
+  pixel.fillRect(x, y, 1, 1);
 }
 
+// FUNÇÕES DE TRANSFORMAÇÃO DE COORDENADAS (NDC de -1 a +1)
 
-// Evento para mostrar e desenhar o pixel clicado
+/**
+ * Converte coordenadas do Usuário (X,Y) para NDC.
+ * user_to_ndc
+ */
+
+function user_to_ndc(xw, yw) {
+  const x_ndc = 2 * ((xw - Xmin) / (Xmax - Xmin)) - 1;
+  const y_ndc = 2 * ((yw - Ymin) / (Ymax - Ymin)) - 1;
+  return { x_ndc, y_ndc };
+}
+
+/**
+ * Converte coordenadas NDC para coordenadas do Usuário (Mundo).
+ * ndc_to_user
+ */
+function ndc_to_user(x_ndc, y_ndc) {
+  const xw = Xmin + ((x_ndc + 1) / 2) * (Xmax - Xmin);
+  const yw = Ymin + ((y_ndc + 1) / 2) * (Ymax - Ymin);
+  return { xw, yw };
+}
+
+/**
+ * Converte coordenadas NDC para o Dispositivo (tela/pixel).
+ * ndc_to_dc
+ */
+function ndc_to_dc(x_ndc, y_ndc) {
+  const xd = Math.round(((x_ndc + 1) / 2) * (canvas.width - 1));
+  // A coordenada Y do dispositivo é invertida (0 no topo)
+  const yd = Math.round(((1 - y_ndc) / 2) * (canvas.height - 1));
+  return { xd, yd };
+}
+
+/**
+ * Converte coordenadas do Dispositivo (tela/pixel) para NDC.
+ * dc_to_ndc (Equivalente ao inp_to_ndc)
+ */
+function dc_to_ndc(xd, yd) {
+  const x_ndc = (xd / (canvas.width - 1)) * 2 - 1;
+  // A coordenada Y do dispositivo é invertida (0 no topo)
+  const y_ndc = (1 - yd / (canvas.height - 1)) * 2 - 1;
+  return { x_ndc, y_ndc };
+}
+
+// EVENTOS DA INTERFACE
+
+// Evento de clique no canvas para selecionar um pixel
 canvas.addEventListener("click", (event) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.round(event.clientX - rect.left);
-    const y = Math.round(event.clientY - rect.top);
-    selectedPixel = { x, y };
-    setPixel(x, y);
+  const rect = canvas.getBoundingClientRect();
+  const xd = Math.round(event.clientX - rect.left); // Coordenada de dispositivo X
+  const yd = Math.round(event.clientY - rect.top); // Coordenada de dispositivo Y
 
-    // Calcula as conversões entre os sistemas de coordenadas
-    const { ndcx, ndcy } = inpToNdc(x, y, canvas.width, canvas.height);
-    const world = ndcToWd(ndcx, ndcy, Xmax, Xmin, Ymax, Ymin);
-    const ndcCentral = wdToNdcCentral(world.worldX, world.worldY, Xmax, Xmin, Ymax, Ymin);
+  // 1. Converter Dispositivo -> NDC
+  const { x_ndc, y_ndc } = dc_to_ndc(xd, yd);
 
-    // Atualiza o painel de coordenadas do clique
-    clickedCoords.innerHTML = 
-    `   <strong>Coordenadas de Mundo:</strong><br> (${world.worldX.toFixed(3)}, ${world.worldY.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC Centralizada:</strong><br> (${ndcCentral.ndccx.toFixed(3)}, ${ndcCentral.ndccy.toFixed(3)})<br><br>
-        <strong>Coordenadas de Dispositivo:</strong><br> (${x}, ${y})
+  // 2. Converter NDC -> Usuário (Mundo)
+  const { xw, yw } = ndc_to_user(x_ndc, y_ndc);
+
+  // Desenha o pixel
+  setPixel(xd, yd);
+
+  // Atualiza o painel de informações
+  clickedCoords.innerHTML = `   <strong>Coord. do Dispositivo (DC):</strong><br> (${xd}, ${yd})<br><br>
+        <strong>Coord. NDC Centrada:</strong><br> (${x_ndc.toFixed(
+          3
+        )}, ${y_ndc.toFixed(3)})<br><br>
+        <strong>Coord. do Usuário (Mundo):</strong><br> (${xw.toFixed(
+          3
+        )}, ${yw.toFixed(3)})
     `;
 });
 
-// Evento para definir um ponto do mundo e desenhar no canvas
+// Evento do botão para definir um ponto a partir das coordenadas do mundo
 document.getElementById("set-world-btn").addEventListener("click", () => {
-    const inputX = parseFloat(document.getElementById("input-x").value);
-    const inputY = parseFloat(document.getElementById("input-y").value);
+  const inputX = parseFloat(document.getElementById("input-x").value);
+  const inputY = parseFloat(document.getElementById("input-y").value);
 
-    if (isNaN(inputX) || isNaN(inputY)) {
-        alert("Por favor, insira coordenadas válidas.");
-        return;
-    }
+  if (isNaN(inputX) || isNaN(inputY)) {
+    alert("Por favor, insira coordenadas válidas.");
+    return;
+  }
 
-    if (inputX < Xmin || inputX > Xmax || inputY < Ymin || inputY > Ymax) {
-        alert(`As coordenadas estão fora do intervalo permitido:\nX: [${Xmin}, ${Xmax}], Y: [${Ymin}, ${Ymax}]`);
-        return;
-    }
+  if (inputX < Xmin || inputX > Xmax || inputY < Ymin || inputY > Ymax) {
+    alert(
+      `As coordenadas estão fora do intervalo do mundo:\nX: [${Xmin}, ${Xmax}], Y: [${Ymin}, ${Ymax}]`
+    );
+    return;
+  }
 
-    // Calcula as conversões entre os sistemas de coordenadas
-    const ndcx = (inputX - Xmin) / (Xmax - Xmin);
-    const ndcy = (inputY - Ymin) / (Ymax - Ymin);
+  // 1. Converter Usuário (Mundo) -> NDC
+  const { x_ndc, y_ndc } = user_to_ndc(inputX, inputY);
 
-    const pixelX = Math.round(ndcx * (canvas.width - 1));  
-    const pixelY = Math.round((1 - ndcy) * (canvas.height - 1)); 
+  // 2. Converter NDC -> Dispositivo
+  const { xd, yd } = ndc_to_dc(x_ndc, y_ndc);
 
-    const ndccx = 2 * ndcx - 1;
-    const ndccy = 2 * ndcy - 1; 
+  // Desenha o pixel
+  setPixel(xd, yd);
 
-    setPixel(pixelX, pixelY);
-
-    // Atualiza o painel de coordenadas do clique
-    clickedCoords.innerHTML = `
-        <strong>Coordenadas de Mundo:</strong><br> (${inputX.toFixed(3)}, ${inputY.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC:</strong><br> (${ndcx.toFixed(3)}, ${ndcy.toFixed(3)})<br><br>
-        <strong>Coordenadas NDC Centralizada:</strong><br> (${ndccx.toFixed(3)}, ${ndccy.toFixed(3)})<br><br>
-        <strong>Coordenadas de Dispositivo:</strong><br> (${pixelX}, ${pixelY}) 
+  // Atualiza o painel de informações
+  clickedCoords.innerHTML = `
+        <strong>Coord. do Usuário (Mundo):</strong><br> (${inputX.toFixed(
+          3
+        )}, ${inputY.toFixed(3)})<br><br>
+        <strong>Coord. NDC Centrada:</strong><br> (${x_ndc.toFixed(
+          3
+        )}, ${y_ndc.toFixed(3)})<br><br>
+        <strong>Coord. do Dispositivo (DC):</strong><br> (${xd}, ${yd})
     `;
 });
-
-// Funções de cálculo e conversão de coordenadas
-
-// Converte coordenadas de pixel para NDC (Normalized Device Coordinates)
-function inpToNdc(x, y, width, height) {
-    return { 
-        ndcx: (x / (width - 1)),
-        ndcy: 1 - (y / (height - 1)) 
-    };
-}
-
-
-// Converte coordenadas NDC para coordenadas do mundo
-function ndcToWd(ndcx, ndcy, Xmax, Xmin, Ymax, Ymin) {
-    return {
-        worldX: ndcx * (Xmax - Xmin) + Xmin,
-        worldY: ndcy * (Ymax - Ymin) + Ymin
-    };
-}
-
-// Converte coordenadas do mundo para NDC centralizada na origem
-function wdToNdcCentral(x, y, Xmax, Xmin, Ymax, Ymin) {
-    return {
-        ndccx: 2 * ((x - Xmin) / (Xmax - Xmin)) - 1,
-        ndccy: 2 * ((y - Ymin) / (Ymax - Ymin)) - 1
-    };
-}
-
-// Converte NDC centralizada para coordenadas de dispositivo (pixel)
-function ndcCentralToDc(ndcx, ndcy, width, height) {    
-    return {
-        dcx: Math.round(((ndcx + 1) / 2) * (width - 1)),
-        dcy: Math.round(((ndcy + 1) / 2) * (height - 1))  
-    };
-}
